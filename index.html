@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>n8n 서버 백업 가이드</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --gray-50: #f9fafb;
+      --gray-100: #f2f4f6;
+      --gray-200: #e5e8eb;
+      --gray-300: #d1d6db;
+      --gray-400: #b0b8c1;
+      --gray-500: #8b95a1;
+      --gray-600: #6b7684;
+      --gray-700: #4e5968;
+      --gray-800: #333d4b;
+      --gray-900: #191f28;
+      --blue-50: #e8f3ff;
+      --blue-100: #c9e2ff;
+      --blue-200: #90c2ff;
+      --blue-400: #4593fc;
+      --blue-500: #3182f6;
+      --blue-600: #2272eb;
+      --blue-700: #1b64da;
+      --green-50: #e8faf5;
+      --green-100: #b5f1d8;
+      --green-500: #30b47a;
+      --green-600: #1fa36b;
+      --red-50: #fff0f0;
+      --red-500: #f04452;
+      --orange-500: #f97316;
+      --purple-500: #8b5cf6;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      color: var(--gray-900);
+      background: #fff;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
+
+    /* ── Navigation ── */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid var(--gray-100);
+      transition: box-shadow 0.3s;
+    }
+
+    nav.scrolled {
+      box-shadow: 0 1px 12px rgba(0,0,0,0.06);
+    }
+
+    nav .inner {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    nav .logo {
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--gray-900);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    nav .logo .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--blue-500);
+    }
+
+    nav .nav-links {
+      display: flex;
+      gap: 28px;
+      list-style: none;
+    }
+
+    nav .nav-links a {
+      color: var(--gray-600);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    nav .nav-links a:hover {
+      color: var(--gray-900);
+    }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 160px 24px 120px;
+      text-align: center;
+      background: linear-gradient(180deg, #fff 0%, var(--gray-50) 100%);
+    }
+
+    .hero .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: var(--blue-50);
+      color: var(--blue-600);
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 24px;
+    }
+
+    .hero .badge .pulse {
+      width: 6px;
+      height: 6px;
+      background: var(--green-500);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.5); }
+    }
+
+    .hero h1 {
+      font-size: 52px;
+      font-weight: 800;
+      line-height: 1.25;
+      letter-spacing: -1.5px;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 .accent {
+      background: linear-gradient(135deg, var(--blue-500), var(--purple-500));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 18px;
+      line-height: 1.7;
+      color: var(--gray-600);
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    /* ── Stats Bar ── */
+    .stats-bar {
+      max-width: 800px;
+      margin: -60px auto 0;
+      padding: 32px 40px;
+      background: var(--gray-900);
+      border-radius: 20px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-item .number {
+      font-size: 32px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -1px;
+    }
+
+    .stat-item .label {
+      font-size: 13px;
+      color: var(--gray-400);
+      margin-top: 4px;
+      font-weight: 500;
+    }
+
+    /* ── Section ── */
+    section {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 120px 24px;
+    }
+
+    .section-label {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--blue-500);
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: 36px;
+      font-weight: 800;
+      line-height: 1.3;
+      letter-spacing: -0.8px;
+      margin-bottom: 16px;
+    }
+
+    .section-desc {
+      font-size: 17px;
+      line-height: 1.7;
+      color: var(--gray-600);
+      max-width: 560px;
+      margin-bottom: 48px;
+    }
+
+    /* ── Architecture ── */
+    .arch-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .arch-card {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-100);
+      border-radius: 16px;
+      padding: 28px;
+      transition: all 0.3s ease;
+    }
+
+    .arch-card:hover {
+      background: #fff;
+      border-color: var(--gray-200);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+      transform: translateY(-2px);
+    }
+
+    .arch-card .icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 16px;
+    }
+
+    .arch-card .icon.blue { background: var(--blue-50); }
+    .arch-card .icon.green { background: var(--green-50); }
+    .arch-card .icon.purple { background: #f3f0ff; }
+    .arch-card .icon.orange { background: #fff7ed; }
+
+    .arch-card h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .arch-card .version {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gray-500);
+      background: var(--gray-100);
+      padding: 2px 8px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+
+    .arch-card p {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--gray-600);
+    }
+
+    /* ── Dockerfile ── */
+    .dockerfile-section {
+      background: var(--gray-50);
+    }
+
+    .dockerfile-section section {
+      max-width: 1080px;
+    }
+
+    .code-block {
+      background: var(--gray-900);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .code-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 20px;
+      background: rgba(255,255,255,0.06);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .code-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .code-dot.red { background: #ff5f57; }
+    .code-dot.yellow { background: #febc2e; }
+    .code-dot.green { background: #28c840; }
+
+    .code-header span {
+      margin-left: 8px;
+      font-size: 13px;
+      color: var(--gray-500);
+      font-weight: 500;
+    }
+
+    .code-block pre {
+      padding: 24px;
+      overflow-x: auto;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 13.5px;
+      line-height: 1.75;
+      color: #e4e4e7;
+    }
+
+    .code-block .comment { color: #6b7280; }
+    .code-block .keyword { color: #c084fc; }
+    .code-block .string { color: #86efac; }
+    .code-block .flag { color: #93c5fd; }
+    .code-block .cmd { color: #fbbf24; }
+
+    /* ── Backup Steps (Timeline) ── */
+    .timeline {
+      position: relative;
+      padding-left: 48px;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 15px;
+      top: 8px;
+      bottom: 8px;
+      width: 2px;
+      background: var(--gray-200);
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 48px;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.6s ease;
+    }
+
+    .timeline-item.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .timeline-item .step-number {
+      position: absolute;
+      left: -48px;
+      top: 0;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--blue-500);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      z-index: 1;
+    }
+
+    .timeline-item h3 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .timeline-item > p {
+      font-size: 15px;
+      color: var(--gray-600);
+      line-height: 1.7;
+      margin-bottom: 16px;
+    }
+
+    .timeline-item .detail-card {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-100);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .timeline-item .detail-card code {
+      display: block;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--gray-700);
+      white-space: pre-wrap;
+    }
+
+    /* ── Restore Flow ── */
+    .restore-flow {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .flow-step {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px 24px;
+      background: var(--gray-50);
+      border: 1px solid var(--gray-100);
+      border-radius: 14px;
+      transition: all 0.3s;
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+
+    .flow-step.visible {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .flow-step:hover {
+      background: #fff;
+      border-color: var(--blue-200);
+      box-shadow: 0 2px 16px rgba(49,130,246,0.08);
+    }
+
+    .flow-step .flow-num {
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--blue-500);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .flow-step .flow-content h4 {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+
+    .flow-step .flow-content p {
+      font-size: 13px;
+      color: var(--gray-500);
+    }
+
+    .flow-step .flow-arrow {
+      margin-left: auto;
+      color: var(--gray-300);
+      font-size: 18px;
+    }
+
+    /* ── Result ── */
+    .result-section {
+      background: var(--gray-900);
+      color: #fff;
+    }
+
+    .result-section .section-label {
+      color: var(--blue-400);
+    }
+
+    .result-section .section-title {
+      color: #fff;
+    }
+
+    .result-section .section-desc {
+      color: var(--gray-400);
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .result-card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 24px;
+      transition: all 0.3s;
+    }
+
+    .result-card:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: rgba(255,255,255,0.15);
+    }
+
+    .result-card .check {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--green-500);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+      font-size: 14px;
+      color: #fff;
+    }
+
+    .result-card h4 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .result-card p {
+      font-size: 13px;
+      color: var(--gray-400);
+      line-height: 1.5;
+    }
+
+    /* ── File Structure ── */
+    .file-tree {
+      background: var(--gray-900);
+      border-radius: 16px;
+      padding: 28px 32px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 13.5px;
+      line-height: 2;
+      color: #e4e4e7;
+      overflow-x: auto;
+    }
+
+    .file-tree .dir { color: var(--blue-400); font-weight: 600; }
+    .file-tree .file { color: var(--gray-400); }
+    .file-tree .size { color: var(--gray-500); font-size: 12px; }
+    .file-tree .important { color: var(--green-500); font-weight: 600; }
+
+    /* ── Warning Box ── */
+    .warning-box {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 14px;
+      padding: 24px 28px;
+      margin-top: 40px;
+      display: flex;
+      gap: 14px;
+    }
+
+    .warning-box .warn-icon {
+      flex-shrink: 0;
+      font-size: 22px;
+    }
+
+    .warning-box h4 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #92400e;
+      margin-bottom: 4px;
+    }
+
+    .warning-box p {
+      font-size: 14px;
+      color: #a16207;
+      line-height: 1.6;
+    }
+
+    .warning-box code {
+      background: rgba(0,0,0,0.06);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    /* ── Prompt Cards ── */
+    .prompt-section {
+      background: var(--gray-50);
+    }
+
+    .prompt-list {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .prompt-card {
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      border-radius: 16px;
+      padding: 0;
+      overflow: hidden;
+      transition: all 0.3s;
+      opacity: 0;
+      transform: translateY(16px);
+    }
+
+    .prompt-card.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .prompt-card:hover {
+      border-color: var(--blue-200);
+      box-shadow: 0 4px 24px rgba(49,130,246,0.08);
+    }
+
+    .prompt-card-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 22px 28px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+
+    .prompt-card-header .prompt-num {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .prompt-num.step-1 { background: var(--blue-500); }
+    .prompt-num.step-2 { background: var(--purple-500); }
+    .prompt-num.step-3 { background: var(--green-500); }
+    .prompt-num.step-4 { background: var(--orange-500); }
+    .prompt-num.step-5 { background: var(--red-500); }
+
+    .prompt-card-header .prompt-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--gray-900);
+    }
+
+    .prompt-card-header .prompt-tag {
+      margin-left: auto;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 100px;
+      flex-shrink: 0;
+    }
+
+    .prompt-tag.essential { background: var(--blue-50); color: var(--blue-600); }
+    .prompt-tag.optional { background: var(--gray-100); color: var(--gray-600); }
+
+    .prompt-card-body {
+      padding: 24px 28px;
+    }
+
+    .prompt-bubble {
+      background: var(--gray-900);
+      color: #fff;
+      border-radius: 14px 14px 14px 4px;
+      padding: 18px 22px;
+      font-size: 15px;
+      line-height: 1.7;
+      font-weight: 500;
+      position: relative;
+      margin-bottom: 14px;
+    }
+
+    .prompt-bubble::before {
+      content: '';
+      position: absolute;
+      top: -8px;
+      left: 20px;
+      display: flex;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gray-500);
+    }
+
+    .prompt-card-body .prompt-note {
+      font-size: 13px;
+      color: var(--gray-500);
+      line-height: 1.6;
+      padding-left: 4px;
+    }
+
+    .prompt-card-body .prompt-note strong {
+      color: var(--gray-700);
+      font-weight: 600;
+    }
+
+    .prompt-oneliner {
+      margin-top: 48px;
+      background: linear-gradient(135deg, var(--blue-500), var(--purple-500));
+      border-radius: 20px;
+      padding: 40px 36px;
+      color: #fff;
+    }
+
+    .prompt-oneliner .oneliner-label {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      opacity: 0.7;
+      margin-bottom: 10px;
+    }
+
+    .prompt-oneliner h3 {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 20px;
+      line-height: 1.35;
+    }
+
+    .prompt-oneliner .oneliner-bubble {
+      background: rgba(0,0,0,0.25);
+      border-radius: 14px;
+      padding: 22px 26px;
+      font-size: 15px;
+      line-height: 1.8;
+      font-weight: 500;
+      backdrop-filter: blur(4px);
+    }
+
+    .prompt-oneliner .oneliner-note {
+      margin-top: 16px;
+      font-size: 13px;
+      opacity: 0.7;
+      line-height: 1.6;
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 60px 24px;
+      border-top: 1px solid var(--gray-100);
+    }
+
+    footer p {
+      font-size: 13px;
+      color: var(--gray-400);
+    }
+
+    footer .date {
+      font-weight: 600;
+      color: var(--gray-600);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .hero { padding: 130px 20px 100px; }
+      .hero h1 { font-size: 32px; }
+      .hero p { font-size: 16px; }
+      .stats-bar { grid-template-columns: repeat(2, 1fr); margin: -40px 20px 0; padding: 24px; gap: 20px; }
+      .stat-item .number { font-size: 24px; }
+      .arch-grid { grid-template-columns: 1fr; }
+      .result-grid { grid-template-columns: 1fr; }
+      section { padding: 80px 20px; }
+      .section-title { font-size: 26px; }
+      nav .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav id="nav">
+  <div class="inner">
+    <div class="logo">
+      <div class="dot"></div>
+      n8n Backup Guide
+    </div>
+    <ul class="nav-links">
+      <li><a href="#architecture">Architecture</a></li>
+      <li><a href="#dockerfile">Dockerfile</a></li>
+      <li><a href="#backup">Backup</a></li>
+      <li><a href="#restore">Restore</a></li>
+      <li><a href="#prompts">Prompts</a></li>
+      <li><a href="#result">Result</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="badge">
+    <div class="pulse"></div>
+    n8nkorea.online 서버 백업 기록
+  </div>
+  <h1>
+    n8n 서버를<br>
+    <span class="accent">완전히 백업</span>하는 방법
+  </h1>
+  <p>
+    Docker 기반 n8n 서버의 워크플로우, 크리덴셜, 데이터베이스,
+    볼륨까지 빠짐없이 백업하고 복원한 전체 과정을 기록합니다.
+  </p>
+</div>
+
+<!-- Stats Bar -->
+<div class="stats-bar">
+  <div class="stat-item">
+    <div class="number">653</div>
+    <div class="label">워크플로우</div>
+  </div>
+  <div class="stat-item">
+    <div class="number">478</div>
+    <div class="label">크리덴셜</div>
+  </div>
+  <div class="stat-item">
+    <div class="number">134</div>
+    <div class="label">사용자</div>
+  </div>
+  <div class="stat-item">
+    <div class="number">285<span style="font-size:18px;color:var(--gray-400)">MB</span></div>
+    <div class="label">백업 파일 크기</div>
+  </div>
+</div>
+
+<!-- Architecture -->
+<section id="architecture">
+  <div class="section-label">Architecture</div>
+  <div class="section-title">서버 구성</div>
+  <div class="section-desc">
+    n8n self-hosted AI starter kit을 기반으로 커스터마이징한 Docker Compose 스택입니다.
+    4개의 서비스가 하나의 네트워크 안에서 동작합니다.
+  </div>
+
+  <div class="arch-grid">
+    <div class="arch-card">
+      <div class="icon blue">&#9881;</div>
+      <h3>n8n</h3>
+      <span class="version">v2.4.8 &middot; Custom Build</span>
+      <p>워크플로우 자동화 엔진. Puppeteer, Crawlee 등 추가 패키지를 포함한 커스텀 이미지로 빌드합니다. 포트 5678로 노출됩니다.</p>
+    </div>
+    <div class="arch-card">
+      <div class="icon green">&#9731;</div>
+      <h3>PostgreSQL</h3>
+      <span class="version">16-alpine</span>
+      <p>n8n의 모든 데이터를 저장하는 메인 데이터베이스. 워크플로우, 크리덴셜, 사용자 정보, 실행 기록을 관리합니다.</p>
+    </div>
+    <div class="arch-card">
+      <div class="icon purple">&#9672;</div>
+      <h3>Qdrant</h3>
+      <span class="version">latest</span>
+      <p>벡터 데이터베이스. AI 워크플로우에서 임베딩 검색과 RAG 파이프라인을 지원합니다. 포트 6333으로 접근합니다.</p>
+    </div>
+    <div class="arch-card">
+      <div class="icon orange">&#9733;</div>
+      <h3>Ollama</h3>
+      <span class="version">llama3.2</span>
+      <p>로컬 LLM 서버. CPU/GPU(NVIDIA/AMD) 프로필을 선택할 수 있으며, 기본으로 llama3.2 모델을 자동 다운로드합니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Dockerfile -->
+<div class="dockerfile-section" id="dockerfile">
+  <section>
+    <div class="section-label">Custom Image</div>
+    <div class="section-title">커스텀 Dockerfile</div>
+    <div class="section-desc">
+      공식 n8n 이미지 대신 Puppeteer와 여러 npm 패키지를 포함한 커스텀 이미지를 빌드합니다.
+      웹 스크래핑, 유튜브 파싱 등 확장 기능이 가능해집니다.
+    </div>
+
+    <div class="code-block">
+      <div class="code-header">
+        <div class="code-dot red"></div>
+        <div class="code-dot yellow"></div>
+        <div class="code-dot green"></div>
+        <span>Dockerfile</span>
+      </div>
+      <pre><span class="keyword">FROM</span> <span class="string">node:20-alpine</span>
+
+<span class="keyword">RUN</span> apk update && apk add <span class="flag">--no-cache</span> \
+    chromium harfbuzz freetype ttf-freefont nss tini
+
+<span class="keyword">ENV</span> PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=<span class="string">true</span>
+<span class="keyword">ENV</span> PUPPETEER_EXECUTABLE_PATH=<span class="string">/usr/bin/chromium-browser</span>
+
+<span class="keyword">RUN</span> npm install <span class="flag">-g</span> <span class="string">n8n@2.4.8</span> puppeteer iconv-lite axios crawlee cheerio youtubei
+
+<span class="keyword">ENV</span> NODE_FUNCTION_ALLOW_EXTERNAL=<span class="string">iconv-lite,axios,puppeteer,cheerio,youtubei</span>
+<span class="keyword">ENV</span> NODE_FUNCTION_ALLOW_BUILTIN=<span class="string">*</span>
+
+<span class="keyword">ENTRYPOINT</span> [<span class="string">"/sbin/tini"</span>, <span class="string">"--"</span>]
+<span class="keyword">CMD</span> [<span class="string">"n8n"</span>]</pre>
+    </div>
+  </section>
+</div>
+
+<!-- Backup Process -->
+<section id="backup">
+  <div class="section-label">Backup Process</div>
+  <div class="section-title">백업 스크립트 5단계</div>
+  <div class="section-desc">
+    <code style="background:var(--gray-100);padding:3px 8px;border-radius:6px;font-size:14px;">backup.sh</code>는 서비스 중단 없이 실행됩니다.
+    <code style="background:var(--gray-100);padding:3px 8px;border-radius:6px;font-size:14px;">--no-executions</code> 옵션으로 실행 기록을 제외할 수 있습니다.
+  </div>
+
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="step-number">1</div>
+      <h3>n8n CLI Export</h3>
+      <p>n8n 컨테이너 안에서 CLI를 사용해 워크플로우와 크리덴셜을 JSON 파일로 내보냅니다. 가장 안전한 백업 방식입니다.</p>
+      <div class="detail-card">
+        <code><span style="color:var(--blue-400)">$</span> docker exec n8n n8n export:workflow --all --separate --output=/tmp/workflows/
+<span style="color:var(--blue-400)">$</span> docker exec n8n n8n export:credentials --all --separate --output=/tmp/credentials/
+<span style="color:var(--blue-400)">$</span> docker cp n8n:/tmp/n8n_export/. ./backup/n8n_export/</code>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="step-number">2</div>
+      <h3>PostgreSQL Dump</h3>
+      <p>pg_dump로 전체 데이터베이스를 SQL 파일로 덤프합니다. <code style="background:var(--gray-100);padding:1px 5px;border-radius:4px;font-size:13px;">--no-executions</code> 옵션 사용 시 execution 테이블 데이터를 제외합니다.</p>
+      <div class="detail-card">
+        <code><span style="color:var(--blue-400)">$</span> docker exec postgres pg_dump -U root -d n8n \
+    --exclude-table-data=execution_data \
+    --exclude-table-data=execution_entity \
+    --exclude-table-data=execution_metadata \
+    > postgres/n8n.sql</code>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="step-number">3</div>
+      <h3>Docker Volume Archive</h3>
+      <p>n8n_storage와 qdrant_storage 볼륨을 tar.gz로 압축합니다. 커뮤니티 노드, 벡터 DB 데이터가 포함됩니다.</p>
+      <div class="detail-card">
+        <code><span style="color:var(--blue-400)">$</span> docker run --rm \
+    -v n8n_storage:/data:ro \
+    -v ./volumes:/backup \
+    alpine tar czf /backup/n8n_storage.tar.gz -C /data .
+
+<span style="color:var(--blue-400)">$</span> docker run --rm \
+    -v qdrant_storage:/data:ro \
+    -v ./volumes:/backup \
+    alpine tar czf /backup/qdrant_storage.tar.gz -C /data .</code>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="step-number">4</div>
+      <h3>Project Files Copy</h3>
+      <p>docker-compose.yml, Dockerfile, .env 등 프로젝트 설정 파일과 기존 n8n/backup 디렉토리를 복사합니다.</p>
+      <div class="detail-card">
+        <code><span style="color:var(--gray-500)"># 복사되는 파일:</span>
+docker-compose.yml      <span style="color:var(--gray-500)"># 서비스 구성</span>
+docker-compose_origin.yml
+Dockerfile              <span style="color:var(--gray-500)"># 커스텀 이미지</span>
+.env                    <span style="color:var(--gray-500)"># 환경변수 (암호화 키 포함!)</span>
+n8n/backup/             <span style="color:var(--gray-500)"># 기존 import용 JSON</span></code>
+      </div>
+    </div>
+
+    <div class="timeline-item" style="margin-bottom: 0">
+      <div class="step-number">5</div>
+      <h3>Metadata &amp; ZIP</h3>
+      <p>백업 정보(DB 통계, 컨테이너 상태, 커뮤니티 노드 목록)를 기록하고 전체를 하나의 ZIP 파일로 압축합니다.</p>
+      <div class="detail-card">
+        <code><span style="color:var(--gray-500)"># backup_info.txt에 기록되는 정보:</span>
+- 백업 일시 및 호스트명
+- Docker 이미지/컨테이너 상태
+- DB 통계 (워크플로우, 크리덴셜, 사용자, 실행기록)
+- 커뮤니티 노드 패키지 목록
+- 백업 파일 구조</code>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- File Structure -->
+<div style="background: var(--gray-50)">
+  <section id="structure">
+    <div class="section-label">File Structure</div>
+    <div class="section-title">백업 파일 구조</div>
+    <div class="section-desc">
+      백업 ZIP 파일을 압축 해제하면 아래와 같은 구조가 나타납니다.
+    </div>
+
+    <div class="file-tree">
+<span class="dir">backup_20260219_162358/</span>
+├── <span class="important">backup_info.txt</span>              <span class="size">메타데이터 &amp; 복원 가이드</span>
+├── <span class="dir">postgres/</span>
+│   └── <span class="important">n8n.sql</span>                   <span class="size">PostgreSQL 전체 덤프</span>
+├── <span class="dir">n8n_export/</span>
+│   ├── <span class="dir">workflows/</span>                <span class="size">653개 JSON 파일</span>
+│   └── <span class="dir">credentials/</span>              <span class="size">478개 JSON 파일</span>
+├── <span class="dir">volumes/</span>
+│   ├── <span class="file">n8n_storage.tar.gz</span>        <span class="size">커뮤니티 노드 포함</span>
+│   └── <span class="file">qdrant_storage.tar.gz</span>     <span class="size">벡터 DB 데이터</span>
+└── <span class="dir">project/</span>
+    ├── <span class="important">.env</span>                      <span class="size">N8N_ENCRYPTION_KEY 포함!</span>
+    ├── <span class="file">docker-compose.yml</span>
+    ├── <span class="file">docker-compose_origin.yml</span>
+    ├── <span class="file">Dockerfile</span>
+    └── <span class="dir">n8n/</span>
+        ├── <span class="dir">workflows/</span>
+        └── <span class="dir">credentials/</span></div>
+
+    <div class="warning-box">
+      <div class="warn-icon">&#9888;</div>
+      <div>
+        <h4>N8N_ENCRYPTION_KEY는 반드시 보관하세요</h4>
+        <p>
+          이 키가 없으면 크리덴셜을 복호화할 수 없습니다. <code>.env</code> 파일에 포함되어 있으며,
+          백업 ZIP 안의 <code>project/.env</code>에서 확인할 수 있습니다. 이 키를 분실하면 모든
+          API 키, OAuth 토큰 등을 다시 설정해야 합니다.
+        </p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- Restore Process -->
+<section id="restore">
+  <div class="section-label">Restore Process</div>
+  <div class="section-title">복원 7단계</div>
+  <div class="section-desc">
+    <code style="background:var(--gray-100);padding:3px 8px;border-radius:6px;font-size:14px;">restore.sh ./backup_20260219_162358</code> 한 줄이면 충분합니다.
+    로컬 환경에서 복원할 때는 도메인을 <code style="background:var(--gray-100);padding:3px 8px;border-radius:6px;font-size:14px;">localhost</code>로 변경하세요.
+  </div>
+
+  <div class="restore-flow">
+    <div class="flow-step">
+      <div class="flow-num">1</div>
+      <div class="flow-content">
+        <h4>백업 유효성 검증</h4>
+        <p>n8n.sql, .env, docker-compose.yml, Dockerfile, backup_info.txt 존재 여부 확인</p>
+      </div>
+      <div class="flow-arrow">&#8594;</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">2</div>
+      <div class="flow-content">
+        <h4>프로젝트 파일 복원</h4>
+        <p>docker-compose.yml, Dockerfile, .env를 작업 디렉토리로 복사 (기존 .env는 자동 백업)</p>
+      </div>
+      <div class="flow-arrow">&#8594;</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">3</div>
+      <div class="flow-content">
+        <h4>Docker 볼륨 복원</h4>
+        <p>n8n_storage, qdrant_storage를 tar.gz에서 복원, postgres_storage는 빈 볼륨 생성</p>
+      </div>
+      <div class="flow-arrow">&#8594;</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">4</div>
+      <div class="flow-content">
+        <h4>PostgreSQL 기동</h4>
+        <p>커스텀 이미지 빌드 후 postgres만 먼저 기동, health check로 준비 완료 대기</p>
+      </div>
+      <div class="flow-arrow">&#8594;</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">5</div>
+      <div class="flow-content">
+        <h4>DB 덤프 복원</h4>
+        <p>기존 DB를 DROP &rarr; CREATE &rarr; psql로 SQL 덤프 파일 임포트</p>
+      </div>
+      <div class="flow-arrow">&#8594;</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">6</div>
+      <div class="flow-content">
+        <h4>전체 서비스 기동</h4>
+        <p>docker compose up -d &mdash; n8n, qdrant 등 나머지 서비스 시작, n8n health check 대기</p>
+      </div>
+      <div class="flow-arrow">&#8594;</div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-num">7</div>
+      <div class="flow-content">
+        <h4>복원 결과 검증</h4>
+        <p>워크플로우, 크리덴셜, 사용자 수를 DB에서 조회하여 원본과 비교 검증</p>
+      </div>
+      <div class="flow-arrow">&#10003;</div>
+    </div>
+  </div>
+</section>
+
+<!-- Prompt Examples -->
+<div class="prompt-section" id="prompts">
+  <section>
+    <div class="section-label">Claude Code Prompts</div>
+    <div class="section-title">AI에게 이렇게 시키세요</div>
+    <div class="section-desc">
+      이 백업 시스템을 처음부터 만들기 위해 Claude Code에 입력한 프롬프트 예시입니다.
+      순서대로 따라하면 동일한 결과를 얻을 수 있습니다.
+    </div>
+
+    <div class="prompt-list">
+
+      <!-- Prompt 1 -->
+      <div class="prompt-card">
+        <div class="prompt-card-header">
+          <div class="prompt-num step-1">1</div>
+          <div class="prompt-title">현황 파악</div>
+          <div class="prompt-tag essential">필수</div>
+        </div>
+        <div class="prompt-card-body">
+          <div class="prompt-bubble">내 서버에서 docker compose로 n8n 돌리고 있어. 현재 구성 파악해줘</div>
+          <div class="prompt-note">
+            <strong>Claude가 하는 일:</strong> docker-compose.yml, .env, Dockerfile, 컨테이너 상태, DB 통계(워크플로우/크리덴셜/사용자 수) 등 서버 전체 현황을 분석합니다.
+          </div>
+        </div>
+      </div>
+
+      <!-- Prompt 2 -->
+      <div class="prompt-card">
+        <div class="prompt-card-header">
+          <div class="prompt-num step-2">2</div>
+          <div class="prompt-title">백업 스크립트 생성</div>
+          <div class="prompt-tag essential">필수</div>
+        </div>
+        <div class="prompt-card-body">
+          <div class="prompt-bubble">이 n8n 서버 전체를 백업하는 쉘 스크립트 만들어줘. 서비스 중단 없이 실행 가능해야 하고, 워크플로우/크리덴셜 JSON export, PostgreSQL 덤프, Docker 볼륨 tar, 프로젝트 파일까지 다 포함해줘. 실행기록 제외 옵션도 넣어줘</div>
+          <div class="prompt-note">
+            <strong>Claude가 하는 일:</strong> 5단계 <code style="background:var(--gray-100);padding:1px 5px;border-radius:4px;font-size:12px;">backup.sh</code> 스크립트를 생성합니다. n8n CLI export, pg_dump, 볼륨 아카이브, 프로젝트 파일 복사, 메타데이터 기록까지 자동화합니다.
+          </div>
+        </div>
+      </div>
+
+      <!-- Prompt 3 -->
+      <div class="prompt-card">
+        <div class="prompt-card-header">
+          <div class="prompt-num step-3">3</div>
+          <div class="prompt-title">복원 스크립트 생성</div>
+          <div class="prompt-tag essential">필수</div>
+        </div>
+        <div class="prompt-card-body">
+          <div class="prompt-bubble">백업한 걸 다른 서버에서 복원하는 스크립트도 만들어줘. 유효성 검증하고, DB 복원하고, 볼륨 복원하고, 서비스 기동까지 자동으로</div>
+          <div class="prompt-note">
+            <strong>Claude가 하는 일:</strong> 7단계 <code style="background:var(--gray-100);padding:1px 5px;border-radius:4px;font-size:12px;">restore.sh</code> 스크립트를 생성합니다. 백업 유효성 검증 &rarr; 파일 복원 &rarr; 볼륨 복원 &rarr; DB 복원 &rarr; 서비스 기동 &rarr; 결과 검증까지 한 번에 처리합니다.
+          </div>
+        </div>
+      </div>
+
+      <!-- Prompt 4 -->
+      <div class="prompt-card">
+        <div class="prompt-card-header">
+          <div class="prompt-num step-4">4</div>
+          <div class="prompt-title">백업 실행</div>
+          <div class="prompt-tag optional">상황에 따라</div>
+        </div>
+        <div class="prompt-card-body">
+          <div class="prompt-bubble">백업 스크립트 실행해줘. 실행기록은 빼고</div>
+          <div class="prompt-note">
+            <strong>Claude가 하는 일:</strong> <code style="background:var(--gray-100);padding:1px 5px;border-radius:4px;font-size:12px;">./backup.sh --no-executions</code>를 실행하고 결과를 확인합니다. 직접 서버에서 실행해도 됩니다.
+          </div>
+        </div>
+      </div>
+
+      <!-- Prompt 5 -->
+      <div class="prompt-card">
+        <div class="prompt-card-header">
+          <div class="prompt-num step-5">5</div>
+          <div class="prompt-title">로컬 복원</div>
+          <div class="prompt-tag optional">상황에 따라</div>
+        </div>
+        <div class="prompt-card-body">
+          <div class="prompt-bubble">이 백업 파일 내 맥에서 Docker Desktop으로 복원해줘</div>
+          <div class="prompt-note">
+            <strong>Claude가 하는 일:</strong> 도메인을 localhost로 변경하고, restore.sh를 실행하여 로컬에서 동일한 환경을 구축합니다. 컨테이너명 불일치 등 환경 차이도 자동으로 처리합니다.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- One-liner -->
+    <div class="prompt-oneliner">
+      <div class="oneliner-label">All-in-One Prompt</div>
+      <h3>한 번에 다 시키고 싶다면</h3>
+      <div class="oneliner-bubble">내 서버에서 docker compose로 n8n 돌리고 있어. 전체 백업 스크립트(서비스 중단 없이, 실행기록 제외 옵션 포함)랑 복원 스크립트 만들어줘. 백업 대상: n8n CLI export, PostgreSQL 덤프, Docker 볼륨, 프로젝트 파일(.env 포함). 복원은 다른 서버에서도 가능하게.</div>
+      <div class="oneliner-note">이 프롬프트 하나로 backup.sh + restore.sh 두 스크립트가 모두 생성됩니다.</div>
+    </div>
+
+  </section>
+</div>
+
+<!-- Result -->
+<div class="result-section" id="result">
+  <section>
+    <div class="section-label">Result</div>
+    <div class="section-title">복원 결과</div>
+    <div class="section-desc">
+      2026년 2월 19일에 백업한 데이터를 로컬 Docker Desktop 환경에서 성공적으로 복원했습니다.
+    </div>
+
+    <div class="result-grid">
+      <div class="result-card">
+        <div class="check">&#10003;</div>
+        <h4>n8n 서비스</h4>
+        <p>http://localhost:5678 에서 정상 동작. 653개 워크플로우 모두 확인.</p>
+      </div>
+      <div class="result-card">
+        <div class="check">&#10003;</div>
+        <h4>PostgreSQL</h4>
+        <p>Healthy 상태. 워크플로우 653, 크리덴셜 478, 사용자 134명 복원 완료.</p>
+      </div>
+      <div class="result-card">
+        <div class="check">&#10003;</div>
+        <h4>Qdrant</h4>
+        <p>벡터 DB 스토리지 정상 복원. 포트 6333에서 동작 중.</p>
+      </div>
+      <div class="result-card">
+        <div class="check">&#10003;</div>
+        <h4>커뮤니티 노드</h4>
+        <p>n8n_storage 볼륨을 통해 모든 커뮤니티 패키지가 그대로 복원.</p>
+      </div>
+      <div class="result-card">
+        <div class="check">&#10003;</div>
+        <h4>크리덴셜 복호화</h4>
+        <p>N8N_ENCRYPTION_KEY가 보존되어 478개 크리덴셜 모두 정상 작동.</p>
+      </div>
+      <div class="result-card">
+        <div class="check">&#10003;</div>
+        <h4>커스텀 이미지</h4>
+        <p>Puppeteer, Crawlee 등 포함된 n8n-with-puppeteer 이미지 빌드 성공.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- Footer -->
+<footer>
+  <p>n8nkorea.online 서버 백업 가이드 &middot; <span class="date">2026.02.19</span> 백업 &middot; MacBook Air에서 백업됨</p>
+</footer>
+
+<script>
+  // Nav scroll effect
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 10);
+  });
+
+  // Scroll reveal animation
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => {
+          entry.target.classList.add('visible');
+        }, i * 80);
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15 });
+
+  document.querySelectorAll('.timeline-item, .flow-step, .prompt-card').forEach(el => {
+    observer.observe(el);
+  });
+
+  // Smooth scroll for nav links
+  document.querySelectorAll('nav a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const target = document.querySelector(a.getAttribute('href'));
+      if (target) {
+        window.scrollTo({ top: target.offsetTop - 80, behavior: 'smooth' });
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
